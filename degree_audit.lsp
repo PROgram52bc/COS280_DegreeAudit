@@ -1,8 +1,7 @@
 (defun grad-check (person degree-requirements catalog)
   ; return t if has enough total credits and has all required courses
   ; return a list of problems otherwise
-  (let ((missing-requirements '())
-		(missing-courses '())
+  (let ((missing-courses '())
 		(hour-requirement (cadar degree-requirements)) ; 64
 		(course-requirements (cdadr degree-requirements)) ; (COS382 COS121 (OR MAT215 COS284))
 		; (electives (cdaddr degree-requirements)); (COS104 COS109)
@@ -13,16 +12,15 @@
 ;	(format t "Checking if hours are fulfilled...~%")
 	(dolist (course transcript) (setf hour-fulfilled (+ hour-fulfilled (get-credit-hours course catalog))))
 	(dolist (course plan) (setf hour-fulfilled (+ hour-fulfilled (get-credit-hours course catalog))))
-	(if (< hour-fulfilled hour-requirement)
-	  (push (list 'missing-major-hours (- hour-requirement hour-fulfilled)) missing-requirements) )
 	; then check if the required courses are all taken
 ;	(format t "Checking if required courses are fulfilled...~%")
 	(dolist (course-requirement course-requirements) 
 	  (if (not (requirement-fulfilled course-requirement person))
 		(push course-requirement missing-courses) ))
-	(if (not (null missing-courses))
-	  (push (list 'missing-courses missing-courses) missing-requirements) )
-	(or missing-requirements t)
+	(let ((requirements-fulfilled (and (null missing-courses) (>= hour-fulfilled hour-requirement)))
+		  (missing-hours (if (>= hour-fulfilled hour-requirement) 0 (- hour-requirement hour-fulfilled)))
+		  )
+	  (values requirements-fulfilled missing-courses missing-hours) )
 	)
   )
 
@@ -122,3 +120,7 @@
 			  COS411 COS421 COS424 COS425 COS432 COS433 COS436
 			  MAT230 MAT240 MAT245 MAT251
 			  SYS214 SYS352 SYS401 SYS402 SYS403 SYS411) ))
+
+;(print (grad-check person degree-requirements catalog))
+(multiple-value-bind (fir sec thd) (grad-check person degree-requirements catalog)
+  (format t "Fulfilled: ~A~%Missing courses: ~A~%Missing hours: ~A~%" fir sec thd) )
